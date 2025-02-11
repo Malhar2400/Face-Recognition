@@ -1,0 +1,6 @@
+numpy
+pandas
+opencv-python
+face-recognition
+streamlit
+cloudinary
