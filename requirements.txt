@@ -1,3 +1,5 @@
+
+https://github.com/RoboStack/dlib-build/releases/download/v19.22.99/dlib-19.22.99-cp312-cp312-win_amd64.whl
 numpy
 pandas
 opencv-python
