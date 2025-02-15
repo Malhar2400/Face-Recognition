@@ -1,41 +1,74 @@
 import streamlit as st
 import cloudinary
 import cloudinary.uploader
-import tempfile
-import cv2
+import face_recognition
 import numpy as np
-import json
+import cv2
+from pymongo import MongoClient
 
-# Load Cloudinary credentials from Streamlit secrets
+# ✅ Cloudinary Configuration
 cloudinary.config(
-    cloud_name=st.secrets["cloudinary"]["cloud_name"],
-    api_key=st.secrets["cloudinary"]["api_key"],
-    api_secret=st.secrets["cloudinary"]["api_secret"]
+    cloud_name="",
+    api_key="",
+    api_secret=""
 )
 
-# Streamlit App UI
-st.title("Hackathon Selfie Registration")
-st.write("Click a selfie to register and upload to Cloudinary.")
+# ✅ MongoDB Connection
+client = MongoClient("mongodb://localhost:27017/")
+db = client["face_recognition_db"]
+collection = db["faces"]
 
-# Capture image
-img_file_buffer = st.camera_input("Take a picture")
+def extract_faces(image):
+    encodings = face_recognition.face_encodings(image)
+    return encodings[0] if encodings else None  
 
-if img_file_buffer is not None:
-    # Convert to OpenCV format
-    img_bytes = img_file_buffer.getvalue()
-    np_arr = np.frombuffer(img_bytes, np.uint8)
-    img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+def find_matching_faces(uploaded_encoding):
+    stored_faces = collection.find({})
+    matched_images = []
 
-    # Save temporarily
-    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
-    temp_file_path = temp_file.name
-    cv2.imwrite(temp_file_path, img)
+    for face_data in stored_faces:
+        stored_encoding = np.array(face_data["face_encoding"])
+        
+        # Compute face distance (lower is better)
+        distance = face_recognition.face_distance([stored_encoding], uploaded_encoding)[0]
+        
+        confidence = (1 - distance) * 100 
 
-    st.image(img, caption="Captured Image", use_column_width=True)
+        if confidence >= 45:
+            matched_images.append((face_data["image_url"], confidence))
 
-    # Upload to Cloudinary
-    response = cloudinary.uploader.upload(temp_file_path)
-    cloudinary_url = response["secure_url"]
+    return sorted(matched_images, key=lambda x: x[1], reverse=True)  # Sort by confidence (highest first)
 
-    st.success("Image uploaded successfully!")
-    st.write(f"[View Image]({cloudinary_url})")
+# ✅ Streamlit UI
+st.title("Face Recognition - Hackathon")
+st.write("Upload a photo to find matching faces in the database.")
+
+uploaded_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
+
+if uploaded_file:
+    # Convert uploaded image to OpenCV format
+    file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
+    image = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+    
+    rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    
+    st.image(rgb_image, caption="Uploaded Image", use_container_width=True)
+    
+    # Extract encoding
+    uploaded_encoding = extract_faces(rgb_image)
+    
+    if uploaded_encoding is None:
+        st.error("No face detected. Please upload a clear image with a visible face.")
+    else:
+        # Match against database
+        matched_faces = find_matching_faces(uploaded_encoding)
+        
+        if matched_faces:
+            st.success(f"✅ {len(matched_faces)} High-Confidence Match(es) Found!")
+
+            cols = st.columns(3) 
+            for i, (img_url, confidence) in enumerate(matched_faces):
+                with cols[i % 3]: 
+                    st.image(img_url, caption=f"Confidence: {confidence:.2f}%", use_container_width=True)
+        else:
+            st.warning("❌ No high-confidence matches found (above 45%).")
