@@ -7,9 +7,9 @@ from pymongo import MongoClient
 
 # ✅ Cloudinary Configuration
 cloudinary.config(
-    cloud_name="djtgzknrm",
-    api_key="489942253832734",
-    api_secret="pE_6C8nMawyU9dhthyIy0B3C9yU"
+    cloud_name="",
+    api_key="",
+    api_secret=""
 )
 
 # ✅ MongoDB Connection
