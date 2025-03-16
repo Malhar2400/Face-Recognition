@@ -1,6 +1,6 @@
-streamlit
-cloudinary
-numpy
-opencv-python
-pymongo
-deepface
+streamlit==1.28.0
+cloudinary==1.34.0
+numpy==1.24.3
+opencv-python==4.8.0.76
+pymongo==4.5.0
+deepface==0.0.79
