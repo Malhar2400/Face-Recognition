@@ -3,5 +3,4 @@ cloudinary
 numpy
 opencv-python
 pymongo
-https://github.com/jloh02/dlib-wheels/raw/master/dlib-19.24.1-cp39-cp39-manylinux_2_31_x86_64.whl
-face-recognition
+deepface
