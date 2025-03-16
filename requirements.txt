@@ -1,7 +1,7 @@
 streamlit
 cloudinary
 numpy
-opencv-python
+opencv-python-headless
 pymongo
 deepface
 setuptools
